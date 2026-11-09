@@ -133,3 +133,5 @@ header{flex-wrap:wrap}
 .cfilter button.on[data-f="mid"]{background:var(--c-mid)}
 .cfilter button.on[data-f="high"]{background:var(--c-high)}
 .cfilter button.on[data-f="low"]{background:var(--c-low)}
+.ckeys button.sel{border:2px solid var(--accent);background:rgba(79,209,165,.18)}
+.ckeys button.miss{border:2px dashed var(--good);color:var(--good)}

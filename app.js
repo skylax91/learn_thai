@@ -312,7 +312,7 @@ const C = {
   filter: store.get('cfilter', ['mid','high','low']),   // какие классы тренировать
   byLesson: store.get('cbylesson', false),              // false — все 44 согласные, true — только открытые до урока
   stats: store.get('cstats', {ok:0, tries:0, streak:0, best:0}),
-  queue:[], cur:null, phase:'ask', cls:null, lastInput:null, wrongTap:false,
+  queue:[], cur:null, phase:'ask', cls:null, lastInput:null, sel:new Set(),   // sel — выбранные буквы в режиме rev
 };
 const clsBadge = c => `<span class="badge cls-${c}">${CLASSES[c]}</span>`;
 // все открытые согласные / только выбранных классов
@@ -371,7 +371,7 @@ function cInfo(l){
 
 function cShow(){
   const l = C.cur, fb = $('cfb');
-  C.phase = 'ask'; C.cls = null; C.lastInput = null; C.wrongTap = false;
+  C.phase = 'ask'; C.cls = null; C.lastInput = null; C.sel = new Set();
   fb.className = 'fb'; fb.innerHTML = '';
   if (C.dir === 'fwd'){
     $('cprompt').className = 'prompt thbig'; $('cprompt').textContent = l.c;
@@ -382,7 +382,7 @@ function cShow(){
   } else {
     $('cprompt').className = 'prompt';
     $('cprompt').innerHTML = `${esc(l.snd)} &nbsp;${clsBadge(l.cls)}`;
-    $('cmeaning').textContent = 'найди букву';
+    $('cmeaning').textContent = 'выбери ВСЕ подходящие буквы и нажми «Проверить»';
     $('ckeys').innerHTML = cOpen().map(x => `<button data-k="${esc(x.c)}">${esc(x.c)}</button>`).join('');
   }
 }
@@ -402,7 +402,11 @@ function cNext(){
       $('ckeys').innerHTML = ''; $('cfb').className = 'fb'; $('cans').value = ''; $('cans').readOnly = true;
       return;
     }
-    C.queue = shuffle(p.slice());
+    // в режиме rev — один вопрос на группу «класс + звук» (ส ศ ษ → один вопрос «s · высокий»)
+    const uniq = C.dir === 'rev'
+      ? [...new Map(p.map(l => [l.cls + '|' + sndKey(l), l])).values()]
+      : p;
+    C.queue = shuffle(uniq.slice());
     if (C.cur && C.queue.length > 1 && C.queue[0] === C.cur) C.queue.push(C.queue.shift());
   }
   C.cur = C.queue.shift();
@@ -432,38 +436,56 @@ function cCheck(){
 }
 function cReveal(){
   if (!C.cur || C.phase === 'done') return;
-  if (C.phase === 'ask' && !C.wrongTap) cScore(false); else { C.stats.streak = 0; cSaveStats(); }
+  if (C.phase === 'ask') cScore(false); else { C.stats.streak = 0; cSaveStats(); }
   cRequeue(); C.phase = 'done';
   if (C.dir === 'fwd'){ $('cans').readOnly = true; C.cls = C.cur.cls; cRenderClsBtns(); }
   else {
     const ok = new Set(cMatches(C.cur).map(x => x.c));
-    document.querySelectorAll('#ckeys button').forEach(b => { if (ok.has(b.dataset.k)) b.classList.add('ok'); });
+    document.querySelectorAll('#ckeys button').forEach(b => {
+      b.classList.remove('sel'); if (ok.has(b.dataset.k)) b.classList.add('ok'); });
   }
   const fb = $('cfb'); fb.className = 'fb show bad';
-  fb.innerHTML = `<div class="head">Ответ</div>${cInfo(C.cur)}`;
+  fb.innerHTML = `<div class="head">Ответ</div>` + (C.dir === 'rev' ? cRevList() : cInfo(C.cur));
 }
+function cRevList(){
+  return cMatches(C.cur).map(x => `<div class="row"><span class="big">${esc(x.c)}</span> &nbsp;${clsBadge(x.cls)}
+    &nbsp;<b>${esc(x.snd)}</b> <span class="lbl">${esc(x.nm)}</span></div>`).join('');
+}
+// тап по букве — выбрать / снять выбор
 function cTap(ch){
   if (!C.cur || C.phase === 'done') return;
-  const l = C.cur, fb = $('cfb');
-  const hit = cMatches(l).find(x => x.c === ch);
   const btn = [...document.querySelectorAll('#ckeys button')].find(b => b.dataset.k === ch);
-  if (hit){
-    if (!C.wrongTap) cScore(true);
-    C.phase = 'done'; btn.classList.add('ok');
-    fb.className = 'fb show good';
-    fb.innerHTML = `<div class="head">✓ ${C.wrongTap ? 'Нашёл' : 'Верно'}${!C.wrongTap && C.stats.streak>2?' · серия '+C.stats.streak:''}</div>${cInfo(hit)}`;
-  } else {
-    if (!C.wrongTap){ cScore(false); cRequeue(); }
-    C.wrongTap = true; btn.classList.add('no');
-    const x = LBY[ch];
-    fb.className = 'fb show bad';
-    fb.innerHTML = `<div class="head">✗ Это ${esc(ch)}: ${clsBadge(x.cls)} <b>${esc(x.snd)}</b></div>
-      <div class="row"><span class="lbl">Ищи дальше или нажми «Ответ».</span></div>`;
-  }
+  if (C.sel.has(ch)) C.sel.delete(ch); else C.sel.add(ch);
+  btn.classList.toggle('sel', C.sel.has(ch));
+  $('cfb').className = 'fb';
+}
+function cCheckRev(){
+  if (!C.cur) return;
+  if (C.phase === 'done') return cNext();
+  const fb = $('cfb');
+  if (!C.sel.size){ fb.className = 'fb show bad'; fb.innerHTML = '<div class="head">Выбери букву ↑</div>'; return; }
+  const need = new Set(cMatches(C.cur).map(x => x.c));
+  const missed = [...need].filter(c => !C.sel.has(c));
+  const extra = [...C.sel].filter(c => !need.has(c));
+  const ok = !missed.length && !extra.length;
+  cScore(ok); if (!ok) cRequeue();
+  C.phase = 'done';
+  document.querySelectorAll('#ckeys button').forEach(b => {
+    const k = b.dataset.k; b.classList.remove('sel');
+    if (need.has(k)) b.classList.add(C.sel.has(k) ? 'ok' : 'miss');
+    else if (C.sel.has(k)) b.classList.add('no');
+  });
+  let h = ok
+    ? `<div class="head">✓ Верно${need.size > 1 ? ' — все ' + need.size : ''}${C.stats.streak>2?' · серия '+C.stats.streak:''}</div>`
+    : '<div class="head">✗ Не совсем</div>';
+  if (missed.length) h += `<div class="hint">Пропущено: <span class="th">${esc(missed.join(' '))}</span> — всего подходит ${need.size}.</div>`;
+  if (extra.length) h += `<div class="hint">Лишнее: ${extra.map(c => `<span class="th">${esc(c)}</span> ${clsBadge(LBY[c].cls)} <b>${esc(LBY[c].snd)}</b>`).join(', ')}</div>`;
+  fb.className = 'fb show ' + (ok ? 'good' : 'bad');
+  fb.innerHTML = h + cRevList();
 }
 function cOnEnter(){
   if (!C.cur) return;
-  if (C.dir === 'rev'){ if (C.phase === 'done') cNext(); return; }
+  if (C.dir === 'rev') return cCheckRev();
   if (C.phase === 'done') return cNext();
   if (C.phase === 'wrong' && $('cans').value + '|' + C.cls === C.lastInput) return cReveal();
   cCheck();
@@ -493,7 +515,7 @@ $('cfilter').addEventListener('click', e => {
 });
 $('cdir').addEventListener('click', e => {
   const b = e.target.closest('button'); if (!b) return;
-  C.dir = b.dataset.cdir; store.set('cdir', C.dir); cRenderDir(); cShow();
+  C.dir = b.dataset.cdir; store.set('cdir', C.dir); cRenderDir(); C.queue = []; cNext();
 });
 $('clsbtns').addEventListener('click', e => {
   const b = e.target.closest('button'); if (!b || C.phase === 'done') return;
@@ -503,6 +525,7 @@ $('ckeys').addEventListener('click', e => { const b = e.target.closest('button')
 $('cCheck').addEventListener('click', () => C.phase === 'done' ? cNext() : cCheck());
 $('cShow').addEventListener('click', cReveal);
 $('cShow2').addEventListener('click', cReveal);
+$('cCheck2').addEventListener('click', cCheckRev);
 $('cNext').addEventListener('click', () => { if (C.phase === 'ask' && $('cans').value.trim()) cScore(false); cNext(); });
 $('cNext2').addEventListener('click', () => { if (C.phase === 'ask') cScore(false); cNext(); });
 $('lessons').addEventListener('click', e => {
