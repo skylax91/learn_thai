@@ -11,11 +11,12 @@ const C = {
   filter: store.get('cfilter', ['mid','high','low']),   // какие классы тренировать
   byLesson: store.get('cbylesson', false),              // false — все 44 согласные, true — только открытые до урока
   stats: store.get('cstats', {ok:0, tries:0, streak:0, best:0}),
+  known: new Set(store.get('cknown', [])),             // буквы, отмеченные «знаю» — не спрашиваются
   queue:[], cur:null, phase:'ask', cls:null, lastInput:null, sel:new Set(),   // sel — выбранные буквы в режиме rev
 };
 // все открытые согласные / только выбранных классов
 const cOpen = () => LETTERS.filter(l => l.kind === 'cons' && l.cls && (!C.byLesson || l.lesson <= maxLesson()));
-const cPool = () => cOpen().filter(l => C.filter.includes(l.cls));
+const cPool = () => cOpen().filter(l => C.filter.includes(l.cls) && !C.known.has(l.c));
 const sndKey = l => normLat(l.snd.split('/')[0]);
 function cSndOk(inp, l){
   if (l.c === 'อ' && /^\s*[-—–]\s*$/.test(inp)) return true;   // немая อ
@@ -49,6 +50,26 @@ function cRenderMemo(){
     <div class="row">Средние: ${esc(CLS_MEMO.mid)}</div>
     <div class="row">Высокие: ${esc(CLS_MEMO.high)}</div>
     <div class="row">Низкие: ${esc(CLS_MEMO.low)}</div></details>`;
+  cRenderKnown();
+}
+// «Знаю»: убрать из тренировки / вернуть
+function cSaveKnown(){ store.set('cknown', [...C.known]); C.queue = C.queue.filter(l => !C.known.has(l.c)); cRenderFilter(); cRenderKnown(); }
+// буквы текущего вопроса: в fwd — одна, в rev — вся группа «класс + звук»
+const cCurLetters = () => C.dir === 'rev' ? cMatches(C.cur) : [C.cur];
+function cKnowBtn(){
+  const ls = cCurLetters().map(x => x.c);
+  return `<div class="btns"><button id="cKnow" class="know">✓ Знаю ${esc(ls.join(' '))} — больше не спрашивать</button></div>`;
+}
+function cRenderKnown(){
+  const ls = cOpen().filter(l => C.known.has(l.c));
+  const box = $('cknown'), wasOpen = !!box.querySelector('details[open]');
+  if (!ls.length){ box.classList.add('hidden'); box.innerHTML = ''; return; }
+  box.classList.remove('hidden');
+  const chips = ls.map(l => `<button class="chip k-${l.cls}" data-k="${esc(l.c)}"><span class="g">${esc(l.c)}</span><span class="s">${esc(l.snd)}</span> ✕</button>`).join('');
+  box.innerHTML = `<details${wasOpen?' open':''}><summary>Знаю — не спрашиваются: <b>${ls.length}</b></summary>
+    <div class="row lbl">Нажми на букву, чтобы вернуть её в тренировку.</div>
+    <div class="chips">${chips}</div>
+    <div class="btns"><button id="cKnownAll">Вернуть все</button></div></details>`;
 }
 function cRenderClsBtns(){
   $('clsbtns').innerHTML = ['mid','high','low'].map(k =>
@@ -86,7 +107,7 @@ function cShow(){
   }
 }
 function cRenderFilter(){
-  const o = cOpen();
+  const o = cOpen().filter(l => !C.known.has(l.c));
   $('cfilter').innerHTML = 'Тренировать:' + ['mid','high','low'].map(k =>
     `<button data-f="${k}" class="${C.filter.includes(k)?'on':''}">${CLASSES[k]} · ${o.filter(l=>l.cls===k).length}</button>`).join('') +
     `<button class="tg${C.byLesson?' on':''}" id="tgByLesson"><i></i>Только до урока ${maxLesson()}</button>`;
@@ -97,7 +118,10 @@ function cNext(){
     if (!p.length){
       C.cur = null; C.phase = 'done';
       $('cprompt').className = 'prompt'; $('cprompt').textContent = '—';
-      $('cmeaning').textContent = `В уроках до ${maxLesson()} нет букв выбранного класса — выбери другой класс или выключи «Только до урока».`;
+      const anyKnown = cOpen().some(l => C.filter.includes(l.cls) && C.known.has(l.c));
+      $('cmeaning').textContent = anyKnown
+        ? 'Все буквы выбранных классов отмечены «Знаю». Верни часть из списка ниже или выбери другой класс.'
+        : `В уроках до ${maxLesson()} нет букв выбранного класса — выбери другой класс или выключи «Только до урока».`;
       $('ckeys').innerHTML = ''; $('cfb').className = 'fb'; $('cans').value = ''; $('cans').readOnly = true;
       return;
     }
@@ -123,7 +147,7 @@ function cCheck(){
   if (clsOk && sndOk){
     C.phase = 'done'; a.readOnly = true; a.className = 'ok';
     fb.className = 'fb show good';
-    fb.innerHTML = `<div class="head">✓ Верно${C.stats.streak>2?' · серия '+C.stats.streak:''}</div>${cInfo(l)}`;
+    fb.innerHTML = `<div class="head">✓ Верно${C.stats.streak>2?' · серия '+C.stats.streak:''}</div>${cInfo(l)}${cKnowBtn()}`;
   } else {
     C.phase = 'wrong'; a.className = 'bad'; cRequeue();
     let h = '<div class="head">✗ Не совсем</div>';
@@ -180,7 +204,7 @@ function cCheckRev(){
   if (missed.length) h += `<div class="hint">Пропущено: <span class="th">${esc(missed.join(' '))}</span> — всего подходит ${need.size}.</div>`;
   if (extra.length) h += `<div class="hint">Лишнее: ${extra.map(c => `<span class="th">${esc(c)}</span> ${clsBadge(LBY[c].cls)} <b>${esc(LBY[c].snd)}</b>`).join(', ')}</div>`;
   fb.className = 'fb show ' + (ok ? 'good' : 'bad');
-  fb.innerHTML = h + cRevList();
+  fb.innerHTML = h + cRevList() + (ok ? cKnowBtn() : '');
 }
 function cOnEnter(){
   if (!C.cur) return;
@@ -201,6 +225,17 @@ $('cfilter').addEventListener('click', e => {
   if (f.includes(k)){ if (f.length === 1) return; C.filter = f.filter(x => x !== k); }   // хотя бы один класс
   else C.filter = ['mid','high','low'].filter(x => x === k || f.includes(x));
   store.set('cfilter', C.filter); C.queue = []; cRenderFilter(); cNext();
+});
+$('cfb').addEventListener('click', e => {
+  const b = e.target.closest('#cKnow'); if (!b || !C.cur) return;
+  cCurLetters().forEach(x => C.known.add(x.c)); cSaveKnown();
+  b.disabled = true; b.textContent = '✓ Убрано из тренировки — вернуть можно внизу';
+});
+$('cknown').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  if (b.id === 'cKnownAll') C.known.clear(); else if (b.dataset.k) C.known.delete(b.dataset.k); else return;
+  cSaveKnown(); C.queue = [];
+  if (!C.cur) cNext();   // был экран «всё выучено» — сразу дать вопрос
 });
 $('cdir').addEventListener('click', e => {
   const b = e.target.closest('button'); if (!b) return;

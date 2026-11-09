@@ -143,3 +143,7 @@ header{flex-wrap:wrap}
 .legend .k-mid i{background:var(--c-mid)} .legend .k-high i{background:var(--c-high)} .legend .k-low i{background:var(--c-low)}
 .why{margin-top:6px;font-size:13.5px;color:var(--text);line-height:1.45}
 .why .th{font-size:18px}
+.btns .know{flex:1 1 100%;grid-column:1/-1;background:rgba(79,209,165,.12);border-color:var(--good);color:var(--good);font-size:14px}
+.btns .know:disabled{opacity:.7}
+#cknown .chips{margin:8px 0}
+#cknown .chip{border:1px solid var(--line);font-size:13px;color:var(--muted)}
