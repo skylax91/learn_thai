@@ -141,3 +141,5 @@ header{flex-wrap:wrap}
 .legend span{display:inline-flex;align-items:center;gap:5px}
 .legend i{width:9px;height:9px;border-radius:50%}
 .legend .k-mid i{background:var(--c-mid)} .legend .k-high i{background:var(--c-high)} .legend .k-low i{background:var(--c-low)}
+.why{margin-top:6px;font-size:13.5px;color:var(--text);line-height:1.45}
+.why .th{font-size:18px}
