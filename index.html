@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0f1115">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Тайский алфавит</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1><span>กขค</span>Тайский алфавит</h1>
+    <div class="seg" id="tabs">
+      <button data-tab="practice" class="on">Практика</button>
+      <button data-tab="letters">Буквы</button>
+    </div>
+  </header>
+
+  <div class="lessons" id="lessons"></div>
+  <div class="panel banner" id="banner"></div>
+
+  <section id="practice">
+    <div class="opts">
+      <div class="seg" id="dir">
+        <button data-dir="th" class="on">Пишу тайским</button>
+        <button data-dir="lat">Пишу транскрипцию</button>
+      </div>
+      <div class="toggles">
+        <button class="tg" id="tgTone"><i></i>Спрашивать тон</button>
+        <button class="tg" id="tgKbd"><i></i>Клавиатура</button>
+      </div>
+    </div>
+
+    <div class="stats" id="stats"></div>
+
+    <div class="panel card">
+      <div class="prompt" id="prompt"></div>
+      <div class="meaning" id="meaning"></div>
+      <div class="tonehint" id="tonehint"></div>
+      <input id="ans" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" enterkeyhint="go">
+      <div class="tones hidden" id="tones"></div>
+      <div class="btns">
+        <button class="primary" id="bCheck">Проверить</button>
+        <button id="bShow">Ответ</button>
+        <button id="bNext">Дальше</button>
+      </div>
+      <div class="fb" id="fb"></div>
+    </div>
+
+    <div class="panel kbd hidden" id="kbd"><div class="keys" id="keys"></div></div>
+  </section>
+
+  <section id="letters" class="hidden"></section>
+
+  <div class="foot"><button id="bReset">Сбросить счётчик</button></div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
