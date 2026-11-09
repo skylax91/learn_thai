@@ -194,7 +194,7 @@ function showWord(){
   S.tone = null; S.phase = 'ask'; S.lastInput = null;
   renderTones();
   const fb = $('fb'); fb.className = 'fb'; fb.innerHTML = '';
-  if (!(S.kbd && S.dir === 'th')) a.focus({preventScroll:true});
+  if (!(S.kbd && S.dir === 'th') && S.tab === 'practice') a.focus({preventScroll:true});
 }
 function nextWord(){
   if (!S.queue.length){
@@ -273,7 +273,7 @@ function renderLetters(){
   const ml = maxLesson();
   const open = LETTERS.filter(l => l.lesson <= ml);
   const card = l => `<div class="lc${l.trap?' trap':''}"><span class="ls">ур.${l.lesson}</span>
-    <div class="g">${esc(disp(l.c))}</div><div class="snd">${esc(l.snd)}</div><div class="nm">${esc(l.nm)}</div>
+    <div class="g">${esc(disp(l.c))}</div><div class="snd">${esc(l.snd)} ${l.cls ? clsBadge(l.cls) : ''}</div><div class="nm">${esc(l.nm)}</div>
     <div class="note">${esc(l.note)}</div>
     ${TWINS[l.c] ? `<span class="tw">двойняшка: <b>${TWINS[l.c].map(c=>esc(disp(c))).join(' ')}</b></span>` : ''}</div>`;
   const sec = (title, items) => `<div class="sec">${title} · ${items.length}</div>` +
@@ -289,10 +289,164 @@ function renderLetters(){
 }
 
 function setLesson(l){
-  S.lesson = l; store.set('lesson', l); S.queue = [];
+  S.lesson = l; store.set('lesson', l); S.queue = []; C.queue = [];
   renderLessons(); renderBanner(); renderKeys();
   if (S.tab === 'letters') renderLetters();
-  nextWord();
+  nextWord(); cNext();
+}
+
+/* =====================================================================
+   ТРЕНАЖЁР КЛАССОВ
+   fwd: дана буква → выбрать класс + написать звук
+   rev: даны класс и звук → найти букву
+   ===================================================================== */
+const CLASSES = {mid:'средний', high:'высокий', low:'низкий'};
+const CLS_MEMO = {
+  mid:  'ก จ ด ต บ ป อ (+ ฎ ฏ) — «ไก่ จิก เด็ก ตาย บน ปาก โอ่ง»',
+  high: 'ข ถ ผ ส ห (+ ฉ ฐ ฝ ศ ษ) — «ผี ฝาก ถุง ข้าว สาร ให้ ฉัน»',
+  low:  'все остальные. Проще выучить средние и высокие — остальное низкие.',
+};
+const C = {
+  dir: store.get('cdir', 'fwd'),
+  stats: store.get('cstats', {ok:0, tries:0, streak:0, best:0}),
+  queue:[], cur:null, phase:'ask', cls:null, lastInput:null, wrongTap:false,
+};
+const clsBadge = c => `<span class="badge cls-${c}">${CLASSES[c]}</span>`;
+const cPool = () => LETTERS.filter(l => l.kind === 'cons' && l.cls && l.lesson <= maxLesson());
+const sndKey = l => normLat(l.snd.split('/')[0]);
+function cSndOk(inp, l){
+  if (l.c === 'อ' && /^\s*[-—–]\s*$/.test(inp)) return true;   // немая อ
+  const n = normLat(inp);
+  return !!n && l.snd.split('/').some(s => normLat(s) === n);
+}
+// все буквы из пула с тем же классом и звуком (พ/ภ, ท/ธ, น/ณ, ย/ญ…)
+const cMatches = l => cPool().filter(x => x.cls === l.cls && sndKey(x) === sndKey(l));
+
+function cRenderStats(){
+  const s = C.stats;
+  $('cstats').innerHTML = `<span>Верно <b>${s.ok}</b></span><span>Попыток <b>${s.tries}</b></span><span>Серия <b>${s.streak}</b> · рекорд <b>${s.best}</b></span>`;
+}
+function cSaveStats(){ store.set('cstats', C.stats); cRenderStats(); }
+function cScore(ok){
+  C.stats.tries++;
+  if (ok){ C.stats.ok++; C.stats.streak++; C.stats.best = Math.max(C.stats.best, C.stats.streak); }
+  else C.stats.streak = 0;
+  cSaveStats();
+}
+function cRequeue(){ if (!C.queue.includes(C.cur)) C.queue.splice(Math.min(3, C.queue.length), 0, C.cur); }
+
+function cRenderMemo(){
+  const p = cPool();
+  const row = k => {
+    const ls = p.filter(l => l.cls === k).map(l => l.c).join(' ');
+    return `<div class="row">${clsBadge(k)} <span class="th">${esc(ls || '—')}</span></div>`;
+  };
+  $('cmemo').innerHTML = `<details><summary>Шпаргалка по классам</summary>
+    ${row('mid')}${row('high')}${row('low')}
+    <div class="row">Средние: ${esc(CLS_MEMO.mid)}</div>
+    <div class="row">Высокие: ${esc(CLS_MEMO.high)}</div>
+    <div class="row">Низкие: ${esc(CLS_MEMO.low)}</div></details>`;
+}
+function cRenderClsBtns(){
+  $('clsbtns').innerHTML = ['mid','high','low'].map(k =>
+    `<button data-c="${k}" class="${C.cls===k?'on':''}">${CLASSES[k]}</button>`).join('');
+}
+function cRenderDir(){
+  document.querySelectorAll('#cdir button').forEach(b => b.classList.toggle('on', b.dataset.cdir === C.dir));
+  $('cfwd').classList.toggle('hidden', C.dir !== 'fwd');
+  $('crev').classList.toggle('hidden', C.dir !== 'rev');
+}
+function cInfo(l){
+  const also = cMatches(l).filter(x => x !== l).map(x => x.c);
+  return `<div class="row"><span class="big">${esc(l.c)}</span> &nbsp;${clsBadge(l.cls)} &nbsp;<b>${esc(l.snd)}</b>
+    <span class="lbl">${esc(l.nm)}</span></div>
+    ${also.length ? `<div class="row"><span class="lbl">тот же звук и класс:</span><span class="th">${esc(also.join(' '))}</span></div>` : ''}
+    <div class="row">${esc(l.note)}</div>`;
+}
+
+function cShow(){
+  const l = C.cur, fb = $('cfb');
+  C.phase = 'ask'; C.cls = null; C.lastInput = null; C.wrongTap = false;
+  fb.className = 'fb'; fb.innerHTML = '';
+  if (C.dir === 'fwd'){
+    $('cprompt').className = 'prompt thbig'; $('cprompt').textContent = l.c;
+    $('cmeaning').textContent = 'какой класс и какой звук?';
+    const a = $('cans'); a.value = ''; a.readOnly = false; a.className = '';
+    cRenderClsBtns();
+    if (S.tab === 'classes') a.focus({preventScroll:true});
+  } else {
+    $('cprompt').className = 'prompt';
+    $('cprompt').innerHTML = `${esc(l.snd)} &nbsp;${clsBadge(l.cls)}`;
+    $('cmeaning').textContent = 'найди букву';
+    $('ckeys').innerHTML = cPool().map(x => `<button data-k="${esc(x.c)}">${esc(x.c)}</button>`).join('');
+  }
+}
+function cNext(){
+  if (!C.queue.length){
+    const p = cPool(); if (!p.length) return;
+    C.queue = shuffle(p.slice());
+    if (C.cur && C.queue.length > 1 && C.queue[0] === C.cur) C.queue.push(C.queue.shift());
+  }
+  C.cur = C.queue.shift();
+  cShow();
+}
+function cCheck(){
+  if (C.phase === 'done') return cNext();
+  const l = C.cur, a = $('cans'), fb = $('cfb');
+  if (!C.cls){ fb.className = 'fb show bad'; fb.innerHTML = '<div class="head">Выбери класс ↑</div>'; return; }
+  if (!a.value.trim()){ fb.className = 'fb show bad'; fb.innerHTML = '<div class="head">Напиши звук</div>'; a.focus(); return; }
+  const clsOk = C.cls === l.cls, sndOk = cSndOk(a.value, l);
+  C.lastInput = a.value + '|' + C.cls;
+  cScore(clsOk && sndOk);
+  if (clsOk && sndOk){
+    C.phase = 'done'; a.readOnly = true; a.className = 'ok';
+    fb.className = 'fb show good';
+    fb.innerHTML = `<div class="head">✓ Верно${C.stats.streak>2?' · серия '+C.stats.streak:''}</div>${cInfo(l)}`;
+  } else {
+    C.phase = 'wrong'; a.className = 'bad'; cRequeue();
+    let h = '<div class="head">✗ Не совсем</div>';
+    if (!clsOk) h += `<div class="hint">Класс не тот — подумай ещё. Средние: ก จ ด ต บ ป อ; высокие: ข ถ ผ ส ห.</div>`;
+    if (!sndOk) h += `<div class="hint">Звук не тот${clsOk ? ' (класс верный)' : ''}.</div>`;
+    h += '<div class="row"><span class="lbl">Исправь и нажми Enter, или «Ответ».</span></div>';
+    fb.className = 'fb show bad'; fb.innerHTML = h;
+  }
+}
+function cReveal(){
+  if (C.phase === 'done') return;
+  if (C.phase === 'ask' && !C.wrongTap) cScore(false); else { C.stats.streak = 0; cSaveStats(); }
+  cRequeue(); C.phase = 'done';
+  if (C.dir === 'fwd'){ $('cans').readOnly = true; C.cls = C.cur.cls; cRenderClsBtns(); }
+  else {
+    const ok = new Set(cMatches(C.cur).map(x => x.c));
+    document.querySelectorAll('#ckeys button').forEach(b => { if (ok.has(b.dataset.k)) b.classList.add('ok'); });
+  }
+  const fb = $('cfb'); fb.className = 'fb show bad';
+  fb.innerHTML = `<div class="head">Ответ</div>${cInfo(C.cur)}`;
+}
+function cTap(ch){
+  if (C.phase === 'done') return;
+  const l = C.cur, fb = $('cfb');
+  const hit = cMatches(l).find(x => x.c === ch);
+  const btn = [...document.querySelectorAll('#ckeys button')].find(b => b.dataset.k === ch);
+  if (hit){
+    if (!C.wrongTap) cScore(true);
+    C.phase = 'done'; btn.classList.add('ok');
+    fb.className = 'fb show good';
+    fb.innerHTML = `<div class="head">✓ ${C.wrongTap ? 'Нашёл' : 'Верно'}${!C.wrongTap && C.stats.streak>2?' · серия '+C.stats.streak:''}</div>${cInfo(hit)}`;
+  } else {
+    if (!C.wrongTap){ cScore(false); cRequeue(); }
+    C.wrongTap = true; btn.classList.add('no');
+    const x = LBY[ch];
+    fb.className = 'fb show bad';
+    fb.innerHTML = `<div class="head">✗ Это ${esc(ch)}: ${clsBadge(x.cls)} <b>${esc(x.snd)}</b></div>
+      <div class="row"><span class="lbl">Ищи дальше или нажми «Ответ».</span></div>`;
+  }
+}
+function cOnEnter(){
+  if (C.dir === 'rev'){ if (C.phase === 'done') cNext(); return; }
+  if (C.phase === 'done') return cNext();
+  if (C.phase === 'wrong' && $('cans').value + '|' + C.cls === C.lastInput) return cReveal();
+  cCheck();
 }
 
 /* =====================================================================
@@ -302,10 +456,24 @@ $('tabs').addEventListener('click', e => {
   const b = e.target.closest('button'); if (!b) return;
   S.tab = b.dataset.tab;
   document.querySelectorAll('#tabs button').forEach(x => x.classList.toggle('on', x === b));
-  $('practice').classList.toggle('hidden', S.tab !== 'practice');
-  $('letters').classList.toggle('hidden', S.tab !== 'letters');
+  ['practice','classes','letters'].forEach(id => $(id).classList.toggle('hidden', S.tab !== id));
   if (S.tab === 'letters') renderLetters();
+  if (S.tab === 'classes'){ cRenderMemo(); if (C.dir === 'fwd' && C.phase !== 'done') $('cans').focus({preventScroll:true}); }
 });
+$('cdir').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  C.dir = b.dataset.cdir; store.set('cdir', C.dir); cRenderDir(); cShow();
+});
+$('clsbtns').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b || C.phase === 'done') return;
+  C.cls = b.dataset.c; cRenderClsBtns(); $('cans').focus({preventScroll:true});
+});
+$('ckeys').addEventListener('click', e => { const b = e.target.closest('button'); if (b) cTap(b.dataset.k); });
+$('cCheck').addEventListener('click', () => C.phase === 'done' ? cNext() : cCheck());
+$('cShow').addEventListener('click', cReveal);
+$('cShow2').addEventListener('click', cReveal);
+$('cNext').addEventListener('click', () => { if (C.phase === 'ask' && $('cans').value.trim()) cScore(false); cNext(); });
+$('cNext2').addEventListener('click', () => { if (C.phase === 'ask') cScore(false); cNext(); });
 $('lessons').addEventListener('click', e => {
   const b = e.target.closest('button'); if (!b) return;
   setLesson(b.dataset.l === 'all' ? 'all' : +b.dataset.l);
@@ -330,17 +498,21 @@ $('keys').addEventListener('click', e => {
 $('bCheck').addEventListener('click', () => S.phase === 'done' ? nextWord() : check());
 $('bShow').addEventListener('click', reveal);
 $('bNext').addEventListener('click', () => { if (S.phase === 'ask' && $('ans').value.trim()) { S.stats.tries++; S.stats.streak = 0; saveStats(); } nextWord(); });
-$('bReset').addEventListener('click', () => { S.stats = {ok:0, tries:0, streak:0, best:0}; saveStats(); });
+$('bReset').addEventListener('click', () => {
+  const z = {ok:0, tries:0, streak:0, best:0};
+  if (S.tab === 'classes'){ C.stats = z; cSaveStats(); } else { S.stats = z; saveStats(); }
+});
 document.addEventListener('keydown', e => {
-  if (e.key !== 'Enter' || e.isComposing || S.tab !== 'practice') return;
-  e.preventDefault(); onEnter();
+  if (e.key !== 'Enter' || e.isComposing) return;
+  if (S.tab === 'practice'){ e.preventDefault(); onEnter(); }
+  else if (S.tab === 'classes'){ e.preventDefault(); cOnEnter(); }
 });
 
 /* =====================================================================
    СТАРТ
    ===================================================================== */
 async function loadJSON(name){
-  const r = await fetch('data/' + name + '.json');
+  const r = await fetch('data/' + name + '.json', {cache:'no-cache'});
   if (!r.ok) throw new Error(name + '.json: HTTP ' + r.status);
   return r.json();
 }
@@ -358,6 +530,7 @@ async function init(){
   if (!(S.lesson === 'all' || (S.lesson >= 1 && S.lesson <= 20))) S.lesson = 1;
   renderLessons(); renderBanner(); renderToggles(); renderStats(); renderKeys();
   nextWord();
+  cRenderDir(); cRenderStats(); cNext();
 }
 init().catch(err => {
   console.error(err);

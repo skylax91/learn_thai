@@ -105,3 +105,25 @@ mark{background:rgba(255,107,107,.28);color:#ffb3b3;border-radius:4px;padding:0 
 .hidden{display:none!important}
 .foot{margin-top:18px;text-align:center;font-size:12px;color:var(--muted)}
 .foot button{border:0;background:none;color:var(--muted);text-decoration:underline;font-size:12px}
+
+/* ---------- Тренажёр классов ---------- */
+header{flex-wrap:wrap}
+#tabs{flex:1 1 250px}
+.clsbtns{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:14px}
+.clsbtns button{border:1px solid var(--line);background:var(--panel2);border-radius:12px;padding:10px 4px;font-size:15px;font-weight:600;color:var(--muted)}
+.clsbtns button.on{color:var(--accent-ink);border-color:transparent}
+.clsbtns button.on[data-c="mid"],.cls-mid{background:var(--c-mid)}
+.clsbtns button.on[data-c="high"],.cls-high{background:var(--c-high)}
+.clsbtns button.on[data-c="low"],.cls-low{background:var(--c-low)}
+:root{--c-mid:#7fb7ff;--c-high:#ff9f7a;--c-low:#b9a3ff}
+.badge{display:inline-block;border-radius:7px;padding:1px 7px;font-size:12px;font-weight:700;color:#10131a;vertical-align:middle}
+#cans{margin:10px 0}
+.ckeys{display:grid;grid-template-columns:repeat(auto-fill,minmax(52px,1fr));gap:6px;margin:14px 0 10px}
+.ckeys button{height:56px;border:1px solid var(--line);border-radius:12px;background:var(--panel2);font-family:var(--thai);font-size:30px}
+.ckeys button.ok{background:var(--good);color:var(--accent-ink);border-color:transparent}
+.ckeys button.no{background:rgba(255,107,107,.3);border-color:var(--bad)}
+.ckeys button:disabled{opacity:1}
+.btns.two{grid-template-columns:1fr 1.4fr}
+.memo{margin-top:10px;font-size:13.5px;color:var(--muted)}
+.memo b{color:var(--text)}
+.memo .th{font-size:17px;color:var(--text)}

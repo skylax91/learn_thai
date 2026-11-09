@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>Тайский алфавит</title>
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css?v=2">
 </head>
 <body>
 <div class="wrap">
@@ -15,6 +15,7 @@
     <h1><span>กขค</span>Тайский алфавит</h1>
     <div class="seg" id="tabs">
       <button data-tab="practice" class="on">Практика</button>
+      <button data-tab="classes">Классы</button>
       <button data-tab="letters">Буквы</button>
     </div>
   </header>
@@ -53,11 +54,45 @@
     <div class="panel kbd hidden" id="kbd"><div class="keys" id="keys"></div></div>
   </section>
 
+  <section id="classes" class="hidden">
+    <div class="opts">
+      <div class="seg" id="cdir">
+        <button data-cdir="fwd" class="on">Буква → класс и звук</button>
+        <button data-cdir="rev">Класс и звук → буква</button>
+      </div>
+    </div>
+
+    <div class="stats" id="cstats"></div>
+
+    <div class="panel card">
+      <div class="prompt" id="cprompt"></div>
+      <div class="meaning" id="cmeaning"></div>
+      <div id="cfwd">
+        <div class="clsbtns" id="clsbtns"></div>
+        <input id="cans" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" enterkeyhint="go" lang="en" placeholder="звук латиницей: k, kh, ng…">
+        <div class="btns">
+          <button class="primary" id="cCheck">Проверить</button>
+          <button id="cShow">Ответ</button>
+          <button id="cNext">Дальше</button>
+        </div>
+      </div>
+      <div id="crev" class="hidden">
+        <div class="ckeys" id="ckeys"></div>
+        <div class="btns two">
+          <button id="cShow2">Ответ</button>
+          <button class="primary" id="cNext2">Дальше</button>
+        </div>
+      </div>
+      <div class="fb" id="cfb"></div>
+    </div>
+    <div class="panel memo" id="cmemo"></div>
+  </section>
+
   <section id="letters" class="hidden"></section>
 
   <div class="foot"><button id="bReset">Сбросить счётчик</button></div>
 </div>
 
-<script src="app.js"></script>
+<script src="app.js?v=2"></script>
 </body>
 </html>
