@@ -293,7 +293,7 @@ function setLesson(l){
   S.lesson = l; store.set('lesson', l); S.queue = []; C.queue = [];
   renderLessons(); renderBanner(); renderKeys();
   if (S.tab === 'letters') renderLetters();
-  nextWord(); cRenderFilter(); cNext();
+  nextWord(); cRenderFilter(); cRenderMemo(); cNext();
 }
 
 /* =====================================================================
@@ -310,12 +310,13 @@ const CLS_MEMO = {
 const C = {
   dir: store.get('cdir', 'fwd'),
   filter: store.get('cfilter', ['mid','high','low']),   // какие классы тренировать
+  byLesson: store.get('cbylesson', false),              // false — все 44 согласные, true — только открытые до урока
   stats: store.get('cstats', {ok:0, tries:0, streak:0, best:0}),
   queue:[], cur:null, phase:'ask', cls:null, lastInput:null, wrongTap:false,
 };
 const clsBadge = c => `<span class="badge cls-${c}">${CLASSES[c]}</span>`;
 // все открытые согласные / только выбранных классов
-const cOpen = () => LETTERS.filter(l => l.kind === 'cons' && l.cls && l.lesson <= maxLesson());
+const cOpen = () => LETTERS.filter(l => l.kind === 'cons' && l.cls && (!C.byLesson || l.lesson <= maxLesson()));
 const cPool = () => cOpen().filter(l => C.filter.includes(l.cls));
 const sndKey = l => normLat(l.snd.split('/')[0]);
 function cSndOk(inp, l){
@@ -388,7 +389,8 @@ function cShow(){
 function cRenderFilter(){
   const o = cOpen();
   $('cfilter').innerHTML = 'Тренировать:' + ['mid','high','low'].map(k =>
-    `<button data-f="${k}" class="${C.filter.includes(k)?'on':''}">${CLASSES[k]} · ${o.filter(l=>l.cls===k).length}</button>`).join('');
+    `<button data-f="${k}" class="${C.filter.includes(k)?'on':''}">${CLASSES[k]} · ${o.filter(l=>l.cls===k).length}</button>`).join('') +
+    `<button class="tg${C.byLesson?' on':''}" id="tgByLesson"><i></i>Только до урока ${maxLesson()}</button>`;
 }
 function cNext(){
   if (!C.queue.length){
@@ -396,7 +398,7 @@ function cNext(){
     if (!p.length){
       C.cur = null; C.phase = 'done';
       $('cprompt').className = 'prompt'; $('cprompt').textContent = '—';
-      $('cmeaning').textContent = `В уроках до ${maxLesson()} нет букв выбранного класса — выбери другой класс или урок.`;
+      $('cmeaning').textContent = `В уроках до ${maxLesson()} нет букв выбранного класса — выбери другой класс или выключи «Только до урока».`;
       $('ckeys').innerHTML = ''; $('cfb').className = 'fb'; $('cans').value = ''; $('cans').readOnly = true;
       return;
     }
@@ -480,6 +482,10 @@ $('tabs').addEventListener('click', e => {
 });
 $('cfilter').addEventListener('click', e => {
   const b = e.target.closest('button'); if (!b) return;
+  if (b.id === 'tgByLesson'){
+    C.byLesson = !C.byLesson; store.set('cbylesson', C.byLesson);
+    C.queue = []; cRenderFilter(); cRenderMemo(); cNext(); return;
+  }
   const k = b.dataset.f, f = C.filter;
   if (f.includes(k)){ if (f.length === 1) return; C.filter = f.filter(x => x !== k); }   // хотя бы один класс
   else C.filter = ['mid','high','low'].filter(x => x === k || f.includes(x));
