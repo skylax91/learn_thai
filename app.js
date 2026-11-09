@@ -119,7 +119,8 @@ const S = {
   queue:[], cur:null, phase:'ask', lastInput:null, tone:null,
 };
 
-const maxLesson = () => S.lesson === 'all' ? 20 : S.lesson;
+let MAXL = 20;   // пересчитывается из letters.json в init()
+const maxLesson = () => S.lesson === 'all' ? MAXL : S.lesson;
 function pool(){
   let p = S.lesson === 'all' ? WORDS.slice() : WORDS.filter(x => x.home === S.lesson);
   if (S.askTone){ const mono = p.filter(x => x.syl === 1); if (mono.length >= 4) p = mono; }
@@ -131,7 +132,7 @@ function pool(){
    ===================================================================== */
 function renderLessons(){
   const box = $('lessons'); let h = '';
-  for (let n=1;n<=20;n++) h += `<button data-l="${n}" class="${S.lesson===n?'on':''}">${n}</button>`;
+  for (let n=1;n<=MAXL;n++) h += `<button data-l="${n}" class="${S.lesson===n?'on':''}">${n}</button>`;
   h += `<button data-l="all" class="${S.lesson==='all'?'on':''}">Всё</button>`;
   box.innerHTML = h;
   const on = box.querySelector('.on');
@@ -546,12 +547,13 @@ async function init(){
   LETTERS = letters; WORDS = words; PATTERNS = patterns; TONES = tones; LESSON_IDEA = lessons;
   TWINS = twins.twins; TWINHINT = twins.hints;
   LBY = Object.fromEntries(LETTERS.map(l => [l.c, l]));
+  MAXL = Math.max(...LETTERS.map(l => l.lesson));
   WORDS.forEach(x => {
     [...x.t].forEach(c => { if (!LBY[c]) console.warn('Нет буквы в letters.json:', c, 'в слове', x.t); });
     x.home = homeLesson(x);
     const st = syllTones(x.r); x.tone = st[st.length-1] || 'mid'; x.syl = st.length;
   });
-  if (!(S.lesson === 'all' || (S.lesson >= 1 && S.lesson <= 20))) S.lesson = 1;
+  if (!(S.lesson === 'all' || (S.lesson >= 1 && S.lesson <= MAXL))) S.lesson = 1;
   renderLessons(); renderBanner(); renderToggles(); renderStats(); renderKeys();
   nextWord();
   cRenderDir(); cRenderFilter(); cRenderStats(); cNext();

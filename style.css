@@ -52,12 +52,12 @@ h1 span{font-family:var(--thai);color:var(--accent);margin-right:6px}
 .prompt.thbig{font-family:var(--thai);font-size:54px;line-height:1.35;font-weight:500}
 .meaning{color:var(--muted);font-size:16px;margin-top:2px;min-height:22px}
 .tonehint{font-size:12.5px;color:var(--warn);margin-top:4px;min-height:0}
-#ans{display:block;width:100%;margin:14px 0 10px;padding:12px 10px;border-radius:14px;border:2px solid var(--line);
+#ans,#cans{display:block;width:100%;margin:14px 0 10px;padding:12px 10px;border-radius:14px;border:2px solid var(--line);
   background:var(--bg);color:var(--text);text-align:center;font-size:26px;outline:none}
 #ans.thin{font-family:var(--thai);font-size:38px;padding:8px 10px}
-#ans:focus{border-color:var(--accent)}
-#ans.ok{border-color:var(--good)}
-#ans.bad{border-color:var(--bad)}
+#ans:focus,#cans:focus{border-color:var(--accent)}
+#ans.ok,#cans.ok{border-color:var(--good)}
+#ans.bad,#cans.bad{border-color:var(--bad)}
 
 .tones{display:grid;grid-template-columns:repeat(5,1fr);gap:5px;margin-bottom:10px}
 .tones button{border:1px solid var(--line);background:var(--panel2);border-radius:10px;padding:6px 2px;font-size:11.5px;color:var(--muted);line-height:1.2}
@@ -117,7 +117,7 @@ header{flex-wrap:wrap}
 .clsbtns button.on[data-c="low"],.cls-low{background:var(--c-low)}
 :root{--c-mid:#7fb7ff;--c-high:#ff9f7a;--c-low:#b9a3ff}
 .badge{display:inline-block;border-radius:7px;padding:1px 7px;font-size:12px;font-weight:700;color:#10131a;vertical-align:middle}
-#cans{margin:10px 0}
+#cans{margin:10px 0;font-size:24px}
 .ckeys{display:grid;grid-template-columns:repeat(auto-fill,minmax(52px,1fr));gap:6px;margin:14px 0 10px}
 .ckeys button{height:56px;border:1px solid var(--line);border-radius:12px;background:var(--panel2);font-family:var(--thai);font-size:30px}
 .ckeys button.ok{background:var(--good);color:var(--accent-ink);border-color:transparent}

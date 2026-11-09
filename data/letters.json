@@ -46,5 +46,20 @@
   {"c":"ภ","snd":"ph","nm":"phɔɔ sǎmphao · джонка","kind":"cons","lesson":20,"trap":true,"note":"Низкий класс. Похожа на ถ, но с зубчиком внизу справа.","cls":"low"},
   {"c":"ณ","snd":"n","nm":"nɔɔ neen · послушник","kind":"cons","lesson":20,"note":"«Книжная» n. В конце тоже n: คุณ khun.","cls":"low"},
   {"c":"ญ","snd":"y","nm":"yɔɔ yǐng · женщина","kind":"cons","lesson":20,"trap":true,"note":"В начале y, в КОНЦЕ n (บุญ bun). Как ย с «подставкой» снизу.","cls":"low"},
-  {"c":"ถ","snd":"th","nm":"thɔ̌ɔ thǔng · мешок","kind":"cons","lesson":20,"trap":true,"note":"Бонус: высокий класс, th — частая буква (ถาม thǎam, ถนน thanǒn).","cls":"high"}
+  {"c":"ถ","snd":"th","nm":"thɔ̌ɔ thǔng · мешок","kind":"cons","lesson":20,"trap":true,"note":"Бонус: высокий класс, th — частая буква (ถาม thǎam, ถนน thanǒn).","cls":"high"},
+  {"c":"ฉ","snd":"ch","nm":"chɔ̌ɔ chìng · тарелочки","kind":"cons","lesson":21,"trap":true,"note":"Высокий класс. Как จ, но с лишней петлёй внизу. В конце → t: ฉัน chǎn.","cls":"high"},
+  {"c":"ฝ","snd":"f","nm":"fɔ̌ɔ fǎa · крышка","kind":"cons","lesson":21,"trap":true,"note":"Высокий класс. Как ผ, но с хвостом вверх (как ฟ у พ): ฝน fǒn.","cls":"high"},
+  {"c":"ศ","snd":"s","nm":"sɔ̌ɔ sǎalaa · павильон","kind":"cons","lesson":21,"trap":true,"note":"Высокий класс, s (из санскрита). В конце → t. Похожа на ค с хвостиком.","cls":"high"},
+  {"c":"ษ","snd":"s","nm":"sɔ̌ɔ rɯɯsǐi · отшельник","kind":"cons","lesson":21,"note":"Высокий класс, s. В основном в словах из санскрита: ภาษา phaasǎa.","cls":"high"},
+  {"c":"ฐ","snd":"th","nm":"thɔ̌ɔ thǎan · постамент","kind":"cons","lesson":21,"note":"Высокий класс, th. Редкая: ฐาน thǎan «основа».","cls":"high"},
+  {"c":"ฃ","snd":"kh","nm":"khɔ̌ɔ khùat · бутылка","kind":"cons","lesson":21,"trap":true,"note":"УСТАРЕЛА — в словах не встречается. Высокий класс, как ข с зазубриной.","cls":"high"},
+  {"c":"ฆ","snd":"kh","nm":"khɔɔ rákhang · колокол","kind":"cons","lesson":21,"note":"Низкий класс, kh. Редкая: ระฆัง rákhang, ฆ่า khâa.","cls":"low"},
+  {"c":"ฌ","snd":"ch","nm":"chɔɔ chəə · дерево","kind":"cons","lesson":21,"note":"Низкий класс, ch. Очень редкая (из пали).","cls":"low"},
+  {"c":"ฑ","snd":"th","nm":"thɔɔ monthoo · Мандодари","kind":"cons","lesson":21,"note":"Низкий класс, th — но иногда читается d: บัณฑิต bandìt.","cls":"low"},
+  {"c":"ฒ","snd":"th","nm":"thɔɔ phûuthâo · старик","kind":"cons","lesson":21,"note":"Низкий класс, th: เฒ่า thâo, พัฒนา phátthánaa.","cls":"low"},
+  {"c":"ฬ","snd":"l","nm":"lɔɔ julaa · воздушный змей","kind":"cons","lesson":21,"note":"Низкий класс, l. В конце → n. Редкая: กีฬา kiilaa.","cls":"low"},
+  {"c":"ฮ","snd":"h","nm":"hɔɔ nókhûuk · сова","kind":"cons","lesson":21,"trap":true,"note":"НИЗКИЙ класс, h — пара к высокой ห. Как อ с хвостиком сверху.","cls":"low"},
+  {"c":"ฅ","snd":"kh","nm":"khɔɔ khon · человек","kind":"cons","lesson":21,"trap":true,"note":"УСТАРЕЛА — в словах не встречается. Низкий класс, как ค с зазубриной.","cls":"low"},
+  {"c":"ฎ","snd":"d","nm":"dɔɔ chádaa · головной убор","kind":"cons","lesson":21,"trap":true,"note":"Средний класс, d (в конце → t): กฎ kòt. Снизу завиток.","cls":"mid"},
+  {"c":"ฏ","snd":"t","nm":"tɔɔ pàtàk · копьё","kind":"cons","lesson":21,"trap":true,"note":"Средний класс, t: ปฏิทิน pàtìthin. Снизу зигзаг.","cls":"mid"}
 ]
