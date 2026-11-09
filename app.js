@@ -383,7 +383,8 @@ function cShow(){
     $('cprompt').className = 'prompt';
     $('cprompt').innerHTML = `${esc(l.snd)} &nbsp;${clsBadge(l.cls)}`;
     $('cmeaning').textContent = 'выбери ВСЕ подходящие буквы и нажми «Проверить»';
-    $('ckeys').innerHTML = cOpen().map(x => `<button data-k="${esc(x.c)}">${esc(x.c)}</button>`).join('');
+    // каждый вопрос — новый порядок, чтобы не запоминать позиции
+    $('ckeys').innerHTML = shuffle(cOpen()).map(x => `<button data-k="${esc(x.c)}">${esc(x.c)}</button>`).join('');
   }
 }
 function cRenderFilter(){
