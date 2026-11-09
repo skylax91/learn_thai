@@ -145,10 +145,17 @@ function renderBanner(){
     return;
   }
   const L = LETTERS.filter(l => l.lesson === S.lesson), P = PATTERNS.filter(p => p.lesson === S.lesson);
-  const chips = L.map(l => `<span class="chip${l.trap?' trap':''}"><span class="g">${esc(disp(l.c))}</span><span class="s">${esc(l.snd)}</span></span>`)
+  // согласные окрашены цветом своего класса
+  const chips = L.map(l => `<span class="chip${l.trap?' trap':''}${l.cls?' k-'+l.cls:''}"><span class="g">${esc(disp(l.c))}</span><span class="s">${esc(l.snd)}</span></span>`)
     .concat(P.map(p => `<span class="chip"><span class="g">${esc(p.c)}</span><span class="s">${esc(p.snd)}</span></span>`)).join('');
   b.innerHTML = `<div class="ttl">Урок ${S.lesson} · новое · ${WORDS.filter(x=>x.home===S.lesson).length} слов</div>
-    <div class="chips">${chips}</div><div class="idea">${esc(LESSON_IDEA[S.lesson]||'')}</div>`;
+    <div class="chips">${chips}</div>${clsLegend(L)}<div class="idea">${esc(LESSON_IDEA[S.lesson]||'')}</div>`;
+}
+// легенда цветов — только для классов, которые есть среди новых букв
+function clsLegend(L){
+  const ks = ['mid','high','low'].filter(k => L.some(l => l.cls === k));
+  if (!ks.length) return '';
+  return '<div class="legend">' + ks.map(k => `<span class="k-${k}"><i></i>${CLASSES[k]}</span>`).join('') + '</div>';
 }
 function renderStats(){
   const s = S.stats;

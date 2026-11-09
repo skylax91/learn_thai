@@ -135,3 +135,9 @@ header{flex-wrap:wrap}
 .cfilter button.on[data-f="low"]{background:var(--c-low)}
 .ckeys button.sel{border:2px solid var(--accent);background:rgba(79,209,165,.18)}
 .ckeys button.miss{border:2px dashed var(--good);color:var(--good)}
+/* класс согласной в плашке урока */
+.chip.k-mid .g{color:var(--c-mid)} .chip.k-high .g{color:var(--c-high)} .chip.k-low .g{color:var(--c-low)}
+.legend{display:flex;gap:12px;margin-top:8px;font-size:12.5px;color:var(--muted)}
+.legend span{display:inline-flex;align-items:center;gap:5px}
+.legend i{width:9px;height:9px;border-radius:50%}
+.legend .k-mid i{background:var(--c-mid)} .legend .k-high i{background:var(--c-high)} .legend .k-low i{background:var(--c-low)}
