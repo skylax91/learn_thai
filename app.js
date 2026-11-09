@@ -292,7 +292,7 @@ function setLesson(l){
   S.lesson = l; store.set('lesson', l); S.queue = []; C.queue = [];
   renderLessons(); renderBanner(); renderKeys();
   if (S.tab === 'letters') renderLetters();
-  nextWord(); cNext();
+  nextWord(); cRenderFilter(); cNext();
 }
 
 /* =====================================================================
@@ -308,11 +308,14 @@ const CLS_MEMO = {
 };
 const C = {
   dir: store.get('cdir', 'fwd'),
+  filter: store.get('cfilter', ['mid','high','low']),   // какие классы тренировать
   stats: store.get('cstats', {ok:0, tries:0, streak:0, best:0}),
   queue:[], cur:null, phase:'ask', cls:null, lastInput:null, wrongTap:false,
 };
 const clsBadge = c => `<span class="badge cls-${c}">${CLASSES[c]}</span>`;
-const cPool = () => LETTERS.filter(l => l.kind === 'cons' && l.cls && l.lesson <= maxLesson());
+// все открытые согласные / только выбранных классов
+const cOpen = () => LETTERS.filter(l => l.kind === 'cons' && l.cls && l.lesson <= maxLesson());
+const cPool = () => cOpen().filter(l => C.filter.includes(l.cls));
 const sndKey = l => normLat(l.snd.split('/')[0]);
 function cSndOk(inp, l){
   if (l.c === 'อ' && /^\s*[-—–]\s*$/.test(inp)) return true;   // немая อ
@@ -320,7 +323,7 @@ function cSndOk(inp, l){
   return !!n && l.snd.split('/').some(s => normLat(s) === n);
 }
 // все буквы из пула с тем же классом и звуком (พ/ภ, ท/ธ, น/ณ, ย/ญ…)
-const cMatches = l => cPool().filter(x => x.cls === l.cls && sndKey(x) === sndKey(l));
+const cMatches = l => cOpen().filter(x => x.cls === l.cls && sndKey(x) === sndKey(l));
 
 function cRenderStats(){
   const s = C.stats;
@@ -336,7 +339,7 @@ function cScore(ok){
 function cRequeue(){ if (!C.queue.includes(C.cur)) C.queue.splice(Math.min(3, C.queue.length), 0, C.cur); }
 
 function cRenderMemo(){
-  const p = cPool();
+  const p = cOpen();
   const row = k => {
     const ls = p.filter(l => l.cls === k).map(l => l.c).join(' ');
     return `<div class="row">${clsBadge(k)} <span class="th">${esc(ls || '—')}</span></div>`;
@@ -378,12 +381,24 @@ function cShow(){
     $('cprompt').className = 'prompt';
     $('cprompt').innerHTML = `${esc(l.snd)} &nbsp;${clsBadge(l.cls)}`;
     $('cmeaning').textContent = 'найди букву';
-    $('ckeys').innerHTML = cPool().map(x => `<button data-k="${esc(x.c)}">${esc(x.c)}</button>`).join('');
+    $('ckeys').innerHTML = cOpen().map(x => `<button data-k="${esc(x.c)}">${esc(x.c)}</button>`).join('');
   }
+}
+function cRenderFilter(){
+  const o = cOpen();
+  $('cfilter').innerHTML = 'Тренировать:' + ['mid','high','low'].map(k =>
+    `<button data-f="${k}" class="${C.filter.includes(k)?'on':''}">${CLASSES[k]} · ${o.filter(l=>l.cls===k).length}</button>`).join('');
 }
 function cNext(){
   if (!C.queue.length){
-    const p = cPool(); if (!p.length) return;
+    const p = cPool();
+    if (!p.length){
+      C.cur = null; C.phase = 'done';
+      $('cprompt').className = 'prompt'; $('cprompt').textContent = '—';
+      $('cmeaning').textContent = `В уроках до ${maxLesson()} нет букв выбранного класса — выбери другой класс или урок.`;
+      $('ckeys').innerHTML = ''; $('cfb').className = 'fb'; $('cans').value = ''; $('cans').readOnly = true;
+      return;
+    }
     C.queue = shuffle(p.slice());
     if (C.cur && C.queue.length > 1 && C.queue[0] === C.cur) C.queue.push(C.queue.shift());
   }
@@ -391,6 +406,7 @@ function cNext(){
   cShow();
 }
 function cCheck(){
+  if (!C.cur) return;
   if (C.phase === 'done') return cNext();
   const l = C.cur, a = $('cans'), fb = $('cfb');
   if (!C.cls){ fb.className = 'fb show bad'; fb.innerHTML = '<div class="head">Выбери класс ↑</div>'; return; }
@@ -412,7 +428,7 @@ function cCheck(){
   }
 }
 function cReveal(){
-  if (C.phase === 'done') return;
+  if (!C.cur || C.phase === 'done') return;
   if (C.phase === 'ask' && !C.wrongTap) cScore(false); else { C.stats.streak = 0; cSaveStats(); }
   cRequeue(); C.phase = 'done';
   if (C.dir === 'fwd'){ $('cans').readOnly = true; C.cls = C.cur.cls; cRenderClsBtns(); }
@@ -424,7 +440,7 @@ function cReveal(){
   fb.innerHTML = `<div class="head">Ответ</div>${cInfo(C.cur)}`;
 }
 function cTap(ch){
-  if (C.phase === 'done') return;
+  if (!C.cur || C.phase === 'done') return;
   const l = C.cur, fb = $('cfb');
   const hit = cMatches(l).find(x => x.c === ch);
   const btn = [...document.querySelectorAll('#ckeys button')].find(b => b.dataset.k === ch);
@@ -443,6 +459,7 @@ function cTap(ch){
   }
 }
 function cOnEnter(){
+  if (!C.cur) return;
   if (C.dir === 'rev'){ if (C.phase === 'done') cNext(); return; }
   if (C.phase === 'done') return cNext();
   if (C.phase === 'wrong' && $('cans').value + '|' + C.cls === C.lastInput) return cReveal();
@@ -459,6 +476,13 @@ $('tabs').addEventListener('click', e => {
   ['practice','classes','letters'].forEach(id => $(id).classList.toggle('hidden', S.tab !== id));
   if (S.tab === 'letters') renderLetters();
   if (S.tab === 'classes'){ cRenderMemo(); if (C.dir === 'fwd' && C.phase !== 'done') $('cans').focus({preventScroll:true}); }
+});
+$('cfilter').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  const k = b.dataset.f, f = C.filter;
+  if (f.includes(k)){ if (f.length === 1) return; C.filter = f.filter(x => x !== k); }   // хотя бы один класс
+  else C.filter = ['mid','high','low'].filter(x => x === k || f.includes(x));
+  store.set('cfilter', C.filter); C.queue = []; cRenderFilter(); cNext();
 });
 $('cdir').addEventListener('click', e => {
   const b = e.target.closest('button'); if (!b) return;
@@ -530,7 +554,7 @@ async function init(){
   if (!(S.lesson === 'all' || (S.lesson >= 1 && S.lesson <= 20))) S.lesson = 1;
   renderLessons(); renderBanner(); renderToggles(); renderStats(); renderKeys();
   nextWord();
-  cRenderDir(); cRenderStats(); cNext();
+  cRenderDir(); cRenderFilter(); cRenderStats(); cNext();
 }
 init().catch(err => {
   console.error(err);
